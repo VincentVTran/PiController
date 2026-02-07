@@ -4,13 +4,15 @@
     "exchange": "amq.direct",
     "routingKey": "pi-queue-key",
     "pi-controller-dns": "localhost",
-    "pi-controller-port": "50051"
+    "pi-controller-port": "50051",
+    "dragonflyDbURL": "localhost:6379"
   },
   "prod": {
     "rabbitMQLink": "amqp://admin:admin-ui-password@rabbitmq.rabbitmq.service.cluster.local:5672/",
     "exchange": "amq.direct",
     "routingKey": "pi-queue-key",
     "pi-dns": "pi-server.vt",
-    "pi-controller-port": "50051"
+    "pi-controller-port": "50051",
+    "dragonflyDbURL": "dragonfly.dragonfly.service.cluster.local:6379"
   }
 }

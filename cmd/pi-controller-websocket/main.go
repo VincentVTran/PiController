@@ -1,26 +1,31 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/websocket"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
 	model "github.com/vincentvtran/pi-controller/pkg/model"
 )
 
 var (
-	port             = flag.Int("port", 5005, "The gRPC server port")
-	stage            = flag.String("stage", "local", "Stage for RabbitMQ URL (e.g., local or production)")
-	rabbitURL        string
-	rabbitExchange   string
-	rabbitRoutingKey string
-	upgrader         = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	config           model.ApplicationConfig
+	port           = flag.Int("port", 5005, "The gRPC server port")
+	stage          = flag.String("stage", "local", "Stage for Dragonfly DB URL (e.g., local or production)")
+	queueName      = flag.String("queue", "pi-websocket-queue", "Dragonfly DB queue name")
+	upgrader       = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	dragonFlyDbURL string
+	config         model.ApplicationConfig
+	redisClient    *redis.Client
+	// rabbitURL        string
+	// rabbitExchange   string
+	// rabbitRoutingKey string
 )
 
 func loadConfig() {
@@ -36,67 +41,53 @@ func loadConfig() {
 	}
 }
 
-func determineRabbitMQURL() {
-	var url string
+// Determine Dragonfly DB URL based on stage
+func determineDragonflyDBURL() {
 	switch *stage {
 	case "local":
-		url = config.Local.RabbitMQLink
-		rabbitExchange = config.Local.Exchange
-		rabbitRoutingKey = config.Local.RoutingKey
+		dragonFlyDbURL = config.Local.DragonflyDbURL
+		log.Println("Using local Dragonfly DB URL")
 	case "prod":
-		url = config.Prod.RabbitMQLink
-		rabbitExchange = config.Local.Exchange
-		rabbitRoutingKey = config.Local.RoutingKey
+		dragonFlyDbURL = config.Prod.DragonflyDbURL
+		log.Println("Using production Dragonfly DB URL")
 	default:
-		log.Fatalf("RabbitMQ URL for stage '%s' not found in config", *stage)
+		log.Fatalf("Dragonfly DB URL for stage '%s' not found in config", *stage)
 	}
-	rabbitURL = url
-	log.Printf("Using RabbitMQ URL for stage '%s': %s", *stage, rabbitURL)
 }
 
-func publishToExchange(url string, payload []byte) error {
-	// Connect to RabbitMQ
-	conn, err := amqp.Dial(url)
+// Initialize Redis client for Dragonfly DB
+func initRedisClient(url string) *redis.Client {
+	opt, err := redis.ParseURL("redis://" + url)
 	if err != nil {
-		return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
+		log.Fatalf("Failed to parse Redis URL: %v", err)
 	}
-	defer conn.Close()
+	return redis.NewClient(opt)
+}
 
-	// Open a channel
-	ch, err := conn.Channel()
-	if err != nil {
-		return fmt.Errorf("failed to open a channel: %v", err)
-	}
-	defer ch.Close()
-
-	// Declare an exchange
-	err = ch.ExchangeDeclare(
-		rabbitExchange, // name
-		"direct",       // type
-		true,           // durable
-		false,          // auto-deleted
-		false,          // internal
-		false,          // no-wait
-		nil,            // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare an exchange: %v", err)
+// Publish message to Dragonfly DB queue
+func publishToQueue(message []byte) error {
+	// Create PiOperation from message
+	var piOp model.PiOperation
+	piOp.ClientID = "websocket-client" // Default client ID for websocket messages
+	piOp.Operation = "websocket_message"
+	piOp.Parameters = map[string]interface{}{
+		"message":   string(message),
+		"timestamp": time.Now().Format(time.RFC3339),
 	}
 
-	// Publish the message to the exchange
-	err = ch.Publish(
-		rabbitExchange,   // exchange
-		rabbitRoutingKey, // routing key
-		false,            // mandatory
-		false,            // immediate
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        payload,
-		},
-	)
+	// Marshal to JSON
+	jsonData, err := json.Marshal(piOp)
 	if err != nil {
-		return fmt.Errorf("failed to publish a message: %v", err)
+		return fmt.Errorf("failed to marshal PiOperation to JSON: %v", err)
 	}
+
+	// Push to Redis list (queue)
+	err = redisClient.LPush(context.Background(), *queueName, jsonData).Err()
+	if err != nil {
+		return fmt.Errorf("failed to publish message to queue %s: %v", *queueName, err)
+	}
+
+	log.Printf("Message published to Dragonfly DB queue: %s", *queueName)
 	return nil
 }
 
@@ -119,7 +110,23 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		log.Printf("WebSocket received message: %s", message)
-		publishToExchange(rabbitURL, message)
+
+		// Publish message to queue
+		err = publishToQueue(message)
+		if err != nil {
+			log.Printf("Failed to publish message to queue: %v", err)
+		} else {
+			log.Printf("Message published to queue")
+		}
+
+		// Store message in Dragonfly DB
+		err = redisClient.Set(context.Background(), "websocket:"+fmt.Sprintf("%d", time.Now().UnixNano()), message, 0).Err()
+		if err != nil {
+			log.Printf("Failed to store message in Dragonfly DB: %v", err)
+		} else {
+			log.Printf("Message stored in Dragonfly DB")
+		}
+
 		// Echo the message back to the client
 		err = conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
@@ -144,8 +151,14 @@ func main() {
 	// Load configuration
 	loadConfig()
 
-	// Determine RabbitMQ URL based on stage
-	determineRabbitMQURL()
+	// Determine Dragonfly DB URL based on stage
+	determineDragonflyDBURL()
+
+	// Initialize Redis client
+	redisClient = initRedisClient(dragonFlyDbURL)
+	defer redisClient.Close()
+
+	log.Printf("Connected to Dragonfly DB at %s", dragonFlyDbURL)
 
 	// Start WebSocket server
 	startWebSocketServer()
