@@ -4,31 +4,19 @@ services:
   pi-controller-websocket:
     build:
       context: .
-      dockerfile: cmd/pi-controller-websocket/Dockerfile
+      dockerfile: cmd/pi-controller-server/Dockerfile
     ports:
       - "5005:5005"
-    container_name: pi-controller-websocket
+    container_name: pi-controller-server
     environment:
       - STAGE=local
 
-  pi-controller:
+  pi-controller-agent:
     build:
       context: .
-      dockerfile: cmd/pi-controller/Dockerfile
+      dockerfile: cmd/pi-controller-agent/Dockerfile
     ports:
       - "50051:50051"
-    container_name: pi-controller
-    environment:
-      - STAGE=local
-
-  pi-controller-processor:
-    build:
-      context: .
-      dockerfile: cmd/pi-controller-processor/Dockerfile
-    ports:
-      - "50052:50052"
-    container_name: pi-controller-processor
-    depends_on:
-      - pi-controller
+    container_name: pi-controller-agent
     environment:
       - STAGE=local
