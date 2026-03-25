@@ -11,10 +11,9 @@ make_port_available() {
     fi
 }
 
-PI_PORT=$(make_port_available 50051)  # Capture the output of the function
+PI_PORT=$(make_port_available 50051)
 
-# Start pi-controller in the background
-go build -o pi-controller ./cmd/pi-controller/main.go
+go build -o pi-controller-agent ./cmd/pi-controller-agent/main.go
 
-sudo ./pi-controller --port $PI_PORT
+sudo ./pi-controller-agent --stage=prod --port $PI_PORT
 

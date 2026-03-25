@@ -1,40 +1,23 @@
 #!/usr/bin/env bash
-# Function to find an available port
+set -euo pipefail
+
 make_port_available() {
     PORT=$1
-    PID=$(lsof -t -i:$PORT)
+    PID=$(lsof -t -i:$PORT 2>/dev/null || true)
     if [ -n "$PID" ]; then
-        echo "Killing process $PID on port $PORT"
+        echo "Killing process $PID on port $PORT" >&2
         kill -9 $PID
-    else
-        echo $PORT
     fi
+    echo $PORT
 }
 
-# # Function to clean up background processes
-# cleanup() {
-#   echo "Stopping background processes..."
-#   kill $HOME_PID $PI_PID
-# }
-# trap cleanup EXIT
+SERVER_PORT=$(make_port_available 5005)
+AGENT_PORT=$(make_port_available 50051)
 
-# Find available ports
-HOME_PORT=$(make_port_available 5005)  # Capture the output of the function
-PI_PORT=$(make_port_available 50051)  # Capture the output of the function
+# Start pi-controller-agent in the background
+go run cmd/pi-controller-agent/main.go --stage=local --port=$AGENT_PORT &
+AGENT_PID=$!
+echo "pi-controller-agent started (PID $AGENT_PID) on port $AGENT_PORT"
 
-# Start pi-controller-websocket in the background
-go run cmd/pi-controller-websocket/main.go --stage="local" --port=$HOME_PORT &
-HOME_PID=$!
-echo "Home server started with PID $HOME_PID on port $HOME_PORT"
-
-# Start pi-controller in the background
-go run cmd/pi-controller/main.go --stage="local" --port=$PI_PORT &
-PI_PID=$!
-echo "Pi server started with PID $PI_PID on port $PI_PORT"
-
-# Start the queue-ingestor-service in the foreground
-go run cmd/pi-controller-processor/main.go --stage="local" --server-address dev-desktop.vt:$PI_PORT
-echo "Queue ingestor service started on dev-desktop.vt:$PI_PORT"
-
-# Wait for the foreground process to complete
-wait
+# Start pi-controller-server in the foreground
+go run cmd/pi-controller-server/main.go --stage=local --port=$SERVER_PORT --agent-addr=localhost:$AGENT_PORT
