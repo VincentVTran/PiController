@@ -34,8 +34,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PiAgentController_ConfigureStream_FullMethodName = "/homeserver.proto.PiAgentController/configureStream"
-	PiAgentController_RetrieveStatus_FullMethodName  = "/homeserver.proto.PiAgentController/retrieveStatus"
+	PiAgentController_ConfigureCamera_FullMethodName      = "/homeserver.proto.PiAgentController/configureCamera"
+	PiAgentController_RetrieveCameraStatus_FullMethodName = "/homeserver.proto.PiAgentController/retrieveCameraStatus"
 )
 
 // PiAgentControllerClient is the client API for PiAgentController service.
@@ -45,8 +45,8 @@ const (
 // *
 // Service API definition
 type PiAgentControllerClient interface {
-	ConfigureStream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*OperationResponse, error)
-	RetrieveStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*OperationResponse, error)
+	ConfigureCamera(ctx context.Context, in *CameraRequest, opts ...grpc.CallOption) (*OperationResponse, error)
+	RetrieveCameraStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*OperationResponse, error)
 }
 
 type piAgentControllerClient struct {
@@ -57,20 +57,20 @@ func NewPiAgentControllerClient(cc grpc.ClientConnInterface) PiAgentControllerCl
 	return &piAgentControllerClient{cc}
 }
 
-func (c *piAgentControllerClient) ConfigureStream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*OperationResponse, error) {
+func (c *piAgentControllerClient) ConfigureCamera(ctx context.Context, in *CameraRequest, opts ...grpc.CallOption) (*OperationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(OperationResponse)
-	err := c.cc.Invoke(ctx, PiAgentController_ConfigureStream_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, PiAgentController_ConfigureCamera_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *piAgentControllerClient) RetrieveStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*OperationResponse, error) {
+func (c *piAgentControllerClient) RetrieveCameraStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*OperationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(OperationResponse)
-	err := c.cc.Invoke(ctx, PiAgentController_RetrieveStatus_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, PiAgentController_RetrieveCameraStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +84,8 @@ func (c *piAgentControllerClient) RetrieveStatus(ctx context.Context, in *emptyp
 // *
 // Service API definition
 type PiAgentControllerServer interface {
-	ConfigureStream(context.Context, *StreamRequest) (*OperationResponse, error)
-	RetrieveStatus(context.Context, *emptypb.Empty) (*OperationResponse, error)
+	ConfigureCamera(context.Context, *CameraRequest) (*OperationResponse, error)
+	RetrieveCameraStatus(context.Context, *emptypb.Empty) (*OperationResponse, error)
 	mustEmbedUnimplementedPiAgentControllerServer()
 }
 
@@ -96,11 +96,11 @@ type PiAgentControllerServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPiAgentControllerServer struct{}
 
-func (UnimplementedPiAgentControllerServer) ConfigureStream(context.Context, *StreamRequest) (*OperationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ConfigureStream not implemented")
+func (UnimplementedPiAgentControllerServer) ConfigureCamera(context.Context, *CameraRequest) (*OperationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfigureCamera not implemented")
 }
-func (UnimplementedPiAgentControllerServer) RetrieveStatus(context.Context, *emptypb.Empty) (*OperationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RetrieveStatus not implemented")
+func (UnimplementedPiAgentControllerServer) RetrieveCameraStatus(context.Context, *emptypb.Empty) (*OperationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RetrieveCameraStatus not implemented")
 }
 func (UnimplementedPiAgentControllerServer) mustEmbedUnimplementedPiAgentControllerServer() {}
 func (UnimplementedPiAgentControllerServer) testEmbeddedByValue()                           {}
@@ -123,38 +123,38 @@ func RegisterPiAgentControllerServer(s grpc.ServiceRegistrar, srv PiAgentControl
 	s.RegisterService(&PiAgentController_ServiceDesc, srv)
 }
 
-func _PiAgentController_ConfigureStream_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StreamRequest)
+func _PiAgentController_ConfigureCamera_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PiAgentControllerServer).ConfigureStream(ctx, in)
+		return srv.(PiAgentControllerServer).ConfigureCamera(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PiAgentController_ConfigureStream_FullMethodName,
+		FullMethod: PiAgentController_ConfigureCamera_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PiAgentControllerServer).ConfigureStream(ctx, req.(*StreamRequest))
+		return srv.(PiAgentControllerServer).ConfigureCamera(ctx, req.(*CameraRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PiAgentController_RetrieveStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PiAgentController_RetrieveCameraStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PiAgentControllerServer).RetrieveStatus(ctx, in)
+		return srv.(PiAgentControllerServer).RetrieveCameraStatus(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PiAgentController_RetrieveStatus_FullMethodName,
+		FullMethod: PiAgentController_RetrieveCameraStatus_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PiAgentControllerServer).RetrieveStatus(ctx, req.(*emptypb.Empty))
+		return srv.(PiAgentControllerServer).RetrieveCameraStatus(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -167,12 +167,12 @@ var PiAgentController_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*PiAgentControllerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "configureStream",
-			Handler:    _PiAgentController_ConfigureStream_Handler,
+			MethodName: "configureCamera",
+			Handler:    _PiAgentController_ConfigureCamera_Handler,
 		},
 		{
-			MethodName: "retrieveStatus",
-			Handler:    _PiAgentController_RetrieveStatus_Handler,
+			MethodName: "retrieveCameraStatus",
+			Handler:    _PiAgentController_RetrieveCameraStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

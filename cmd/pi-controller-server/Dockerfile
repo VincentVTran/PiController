@@ -1,21 +1,14 @@
-# Use the official Golang image as a base image
-FROM golang:1.22
+FROM golang:1.23
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Go modules manifests and download dependencies
-COPY ../../../go.mod ../../../go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the rest of the application code
-COPY ../../../ ./
+COPY . ./
 
-# Build the gRPC server
-RUN go build -o pi-controller-websocket ./cmd/pi-controller-websocket/main.go
+RUN go build -o pi-controller-server ./cmd/pi-controller-server/main.go
 
-# Expose the gRPC server port
 EXPOSE 5005
 
-# Command to run the gRPC server
-CMD ["./pi-controller-websocket"]
+CMD ["./pi-controller-server"]

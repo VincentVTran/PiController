@@ -38,28 +38,28 @@ const (
 
 // *
 // Operation request and response objects
-type StreamRequest struct {
+type CameraRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Parameters    *StreamParameter       `protobuf:"bytes,2,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	Parameters    *CameraParameter       `protobuf:"bytes,2,opt,name=parameters,proto3" json:"parameters,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamRequest) Reset() {
-	*x = StreamRequest{}
+func (x *CameraRequest) Reset() {
+	*x = CameraRequest{}
 	mi := &file_api_types_api_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamRequest) String() string {
+func (x *CameraRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamRequest) ProtoMessage() {}
+func (*CameraRequest) ProtoMessage() {}
 
-func (x *StreamRequest) ProtoReflect() protoreflect.Message {
+func (x *CameraRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_types_api_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -71,46 +71,46 @@ func (x *StreamRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
-func (*StreamRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CameraRequest.ProtoReflect.Descriptor instead.
+func (*CameraRequest) Descriptor() ([]byte, []int) {
 	return file_api_types_api_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *StreamRequest) GetClientId() string {
+func (x *CameraRequest) GetClientId() string {
 	if x != nil {
 		return x.ClientId
 	}
 	return ""
 }
 
-func (x *StreamRequest) GetParameters() *StreamParameter {
+func (x *CameraRequest) GetParameters() *CameraParameter {
 	if x != nil {
 		return x.Parameters
 	}
 	return nil
 }
 
-type StreamParameter struct {
+type CameraParameter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Enable        bool                   `protobuf:"varint,1,opt,name=enable,proto3" json:"enable,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamParameter) Reset() {
-	*x = StreamParameter{}
+func (x *CameraParameter) Reset() {
+	*x = CameraParameter{}
 	mi := &file_api_types_api_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamParameter) String() string {
+func (x *CameraParameter) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamParameter) ProtoMessage() {}
+func (*CameraParameter) ProtoMessage() {}
 
-func (x *StreamParameter) ProtoReflect() protoreflect.Message {
+func (x *CameraParameter) ProtoReflect() protoreflect.Message {
 	mi := &file_api_types_api_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -122,12 +122,12 @@ func (x *StreamParameter) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamParameter.ProtoReflect.Descriptor instead.
-func (*StreamParameter) Descriptor() ([]byte, []int) {
+// Deprecated: Use CameraParameter.ProtoReflect.Descriptor instead.
+func (*CameraParameter) Descriptor() ([]byte, []int) {
 	return file_api_types_api_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *StreamParameter) GetEnable() bool {
+func (x *CameraParameter) GetEnable() bool {
 	if x != nil {
 		return x.Enable
 	}
@@ -199,22 +199,22 @@ var File_api_types_api_proto protoreflect.FileDescriptor
 const file_api_types_api_proto_rawDesc = "" +
 	"\n" +
 	"\x13api/types/api.proto\x12\x10homeserver.proto\x1a\x1bgoogle/protobuf/empty.proto\"o\n" +
-	"\rStreamRequest\x12\x1b\n" +
+	"\rCameraRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12A\n" +
 	"\n" +
-	"parameters\x18\x02 \x01(\v2!.homeserver.proto.StreamParameterR\n" +
+	"parameters\x18\x02 \x01(\v2!.homeserver.proto.CameraParameterR\n" +
 	"parameters\")\n" +
-	"\x0fStreamParameter\x12\x16\n" +
+	"\x0fCameraParameter\x12\x16\n" +
 	"\x06enable\x18\x01 \x01(\bR\x06enable\"m\n" +
 	"\x11OperationResponse\x12\x1f\n" +
 	"\vapi_version\x18\x01 \x01(\tR\n" +
 	"apiVersion\x12\x1f\n" +
 	"\vstatus_code\x18\x02 \x01(\x05R\n" +
 	"statusCode\x12\x16\n" +
-	"\x06output\x18\x03 \x01(\tR\x06output2\xbf\x01\n" +
+	"\x06output\x18\x03 \x01(\tR\x06output2\xc5\x01\n" +
 	"\x11PiAgentController\x12Y\n" +
-	"\x0fconfigureStream\x12\x1f.homeserver.proto.StreamRequest\x1a#.homeserver.proto.OperationResponse\"\x00\x12O\n" +
-	"\x0eretrieveStatus\x12\x16.google.protobuf.Empty\x1a#.homeserver.proto.OperationResponse\"\x00B-Z+github.com/vincentvtran/pi-controller/protob\x06proto3"
+	"\x0fconfigureCamera\x12\x1f.homeserver.proto.CameraRequest\x1a#.homeserver.proto.OperationResponse\"\x00\x12U\n" +
+	"\x14retrieveCameraStatus\x12\x16.google.protobuf.Empty\x1a#.homeserver.proto.OperationResponse\"\x00B-Z+github.com/vincentvtran/pi-controller/protob\x06proto3"
 
 var (
 	file_api_types_api_proto_rawDescOnce sync.Once
@@ -230,17 +230,17 @@ func file_api_types_api_proto_rawDescGZIP() []byte {
 
 var file_api_types_api_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_api_types_api_proto_goTypes = []any{
-	(*StreamRequest)(nil),     // 0: homeserver.proto.StreamRequest
-	(*StreamParameter)(nil),   // 1: homeserver.proto.StreamParameter
+	(*CameraRequest)(nil),     // 0: homeserver.proto.CameraRequest
+	(*CameraParameter)(nil),   // 1: homeserver.proto.CameraParameter
 	(*OperationResponse)(nil), // 2: homeserver.proto.OperationResponse
 	(*emptypb.Empty)(nil),     // 3: google.protobuf.Empty
 }
 var file_api_types_api_proto_depIdxs = []int32{
-	1, // 0: homeserver.proto.StreamRequest.parameters:type_name -> homeserver.proto.StreamParameter
-	0, // 1: homeserver.proto.PiAgentController.configureStream:input_type -> homeserver.proto.StreamRequest
-	3, // 2: homeserver.proto.PiAgentController.retrieveStatus:input_type -> google.protobuf.Empty
-	2, // 3: homeserver.proto.PiAgentController.configureStream:output_type -> homeserver.proto.OperationResponse
-	2, // 4: homeserver.proto.PiAgentController.retrieveStatus:output_type -> homeserver.proto.OperationResponse
+	1, // 0: homeserver.proto.CameraRequest.parameters:type_name -> homeserver.proto.CameraParameter
+	0, // 1: homeserver.proto.PiAgentController.configureCamera:input_type -> homeserver.proto.CameraRequest
+	3, // 2: homeserver.proto.PiAgentController.retrieveCameraStatus:input_type -> google.protobuf.Empty
+	2, // 3: homeserver.proto.PiAgentController.configureCamera:output_type -> homeserver.proto.OperationResponse
+	2, // 4: homeserver.proto.PiAgentController.retrieveCameraStatus:output_type -> homeserver.proto.OperationResponse
 	3, // [3:5] is the sub-list for method output_type
 	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

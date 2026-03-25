@@ -1,22 +1,5 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
-// Package main implements a server for Greeter service.
+// Package main implements the pi-controller-agent gRPC server.
+// It runs on the Raspberry Pi and exposes camera control operations.
 package main
 
 import (
@@ -27,6 +10,7 @@ import (
 	"log/slog"
 	"net"
 	"os/exec"
+	"strings"
 
 	pb "github.com/vincentvtran/pi-controller/api/types"
 	"github.com/vincentvtran/pi-controller/pkg/logging"
@@ -36,90 +20,83 @@ import (
 )
 
 var (
-	port   = flag.Int("port", 50051, "The server port")
-	stage  = flag.String("stage", "local", "Stage for RabbitMQ URL (e.g., local or production)")
+	port   = flag.Int("port", 50051, "The gRPC server port")
+	stage  = flag.String("stage", "local", "Stage (local or prod)")
 	logger *slog.Logger
 )
 
 type server struct {
 	pb.UnimplementedPiAgentControllerServer
-	version   string
-	client_id string
+	version  string
+	clientID string
 }
 
-// gRPC implemented endpoints
-func (s *server) ConfigureStream(ctx context.Context, in *pb.StreamRequest) (*pb.OperationResponse, error) {
-	log.Println("Client request: ", in)
+func (s *server) ConfigureCamera(ctx context.Context, in *pb.CameraRequest) (*pb.OperationResponse, error) {
+	logger.Info("ConfigureCamera request", "client_id", in.ClientId, "enable", in.Parameters.Enable)
 	if in.Parameters.Enable {
-		logger.Info("Starting stream")
-		err := StartStream()
-		if err != nil {
-			logger.Error(fmt.Sprintf("Error starting stream: %v", err.Error()))
-			return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 200, Output: err.Error()}, nil
+		if err := enableCamera(); err != nil {
+			logger.Error("Failed to enable camera", "error", err)
+			return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 500, Output: err.Error()}, nil
 		}
 	} else {
-		logger.Info("Stopping stream")
-		err := StopStream()
-		if err != nil {
-			logger.Error(fmt.Sprintf("Error starting stream: %v", err.Error()))
-			return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 200, Output: err.Error()}, nil
+		if err := disableCamera(); err != nil {
+			logger.Error("Failed to disable camera", "error", err)
+			return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 500, Output: err.Error()}, nil
 		}
 	}
-	return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 400, Output: "Successfully configured streamed"}, nil
+	return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 200, Output: "OK"}, nil
 }
 
-func (s *server) RetrieveStatus(ctx context.Context, _ *emptypb.Empty) (*pb.OperationResponse, error) {
-	logger.Info("Fetching current stream configuration")
-	cmd := exec.Command("systemctl", "is-active", "raspivid-stream")
-	output, err := cmd.Output()
+func (s *server) RetrieveCameraStatus(ctx context.Context, _ *emptypb.Empty) (*pb.OperationResponse, error) {
+	logger.Info("RetrieveCameraStatus request")
+	out, err := exec.Command("systemctl", "is-active", "raspivid-stream").Output()
 	if err != nil {
-		logger.Error("Error fetching stream status", "error", err.Error())
+		logger.Error("Failed to retrieve camera status", "error", err)
 		return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 500, Output: "unknown"}, nil
 	}
-
-	status := "inactive"
-	if string(output) == "active\n" {
-		status = "active"
-	}
-
+	status := strings.TrimSpace(string(out))
 	return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 200, Output: status}, nil
 }
 
-// Local Function
-func StartStream() error {
+func enableCamera() error {
 	return exec.Command("systemctl", "start", "raspivid-stream").Run()
 }
-func StopStream() error {
+
+func disableCamera() error {
 	return exec.Command("systemctl", "stop", "raspivid-stream").Run()
 }
 
 func main() {
 	flag.Parse()
 
-	var shutdown, err = logging.InitTelemetry(context.Background())
+	shutdown, err := logging.InitTelemetry(context.Background())
 	if err != nil {
 		log.Fatalf("failed to init telemetry: %v", err)
 	}
-	client_id := "pi-controller"
-	logger = otelslog.NewLogger(client_id)
 	defer shutdown(context.Background())
+
+	clientID := "pi-controller-agent"
+	logger = otelslog.NewLogger(clientID)
+
 	switch *stage {
 	case "local":
-		logger.Info("Using local configurations")
+		logger.Info("Using local configuration")
 	case "prod":
-		logger.Info("Using prod configurations")
+		logger.Info("Using prod configuration")
 	default:
-		logger.Warn("Using prod configurations")
+		logger.Warn("Unknown stage, defaulting to prod configuration", "stage", *stage)
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-		logger.Error(fmt.Sprintf("failed to listen: %v", err))
+		log.Fatalf("failed to listen: %v", err)
 	}
+
 	s := grpc.NewServer()
-	pb.RegisterPiAgentControllerServer(s, &server{version: "1.0.0", client_id: client_id})
-	logger.Info(fmt.Sprintf("server listening at %v", lis.Addr()))
+	pb.RegisterPiAgentControllerServer(s, &server{version: "1.0.0", clientID: clientID})
+	logger.Info("pi-controller-agent listening", "addr", lis.Addr())
+
 	if err := s.Serve(lis); err != nil {
-		logger.Error(fmt.Sprintf("failed to serve: %v", err))
+		log.Fatalf("failed to serve: %v", err)
 	}
 }

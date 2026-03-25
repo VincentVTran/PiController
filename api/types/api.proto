@@ -23,19 +23,19 @@ import "google/protobuf/empty.proto";
  * Service API definition
  */
 service PiAgentController {
-  rpc configureStream(StreamRequest) returns (OperationResponse) {}
-  rpc retrieveStatus(google.protobuf.Empty) returns (OperationResponse) {}
+  rpc configureCamera(CameraRequest) returns (OperationResponse) {}
+  rpc retrieveCameraStatus(google.protobuf.Empty) returns (OperationResponse) {}
 }
 
 /**
  * Operation request and response objects
  */
-message StreamRequest {
+message CameraRequest {
   string client_id = 1;
-  StreamParameter parameters = 2;
+  CameraParameter parameters = 2;
 }
 
-message StreamParameter {
+message CameraParameter {
   bool enable = 1;
 }
 

@@ -1,15 +1,14 @@
-version: '3.8'
-
 services:
-  pi-controller-websocket:
+  pi-controller-server:
     build:
       context: .
       dockerfile: cmd/pi-controller-server/Dockerfile
     ports:
       - "5005:5005"
     container_name: pi-controller-server
-    environment:
-      - STAGE=local
+    command: ["./pi-controller-server", "--stage=local", "--agent-addr=pi-controller-agent:50051"]
+    depends_on:
+      - pi-controller-agent
 
   pi-controller-agent:
     build:
@@ -18,5 +17,4 @@ services:
     ports:
       - "50051:50051"
     container_name: pi-controller-agent
-    environment:
-      - STAGE=local
+    command: ["./pi-controller-agent", "--stage=local"]

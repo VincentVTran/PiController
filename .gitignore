@@ -21,5 +21,6 @@
 go.work
 go.work.sum
 
-# Binarys
-pi-controller
+# Binaries
+pi-controller-agent
+pi-controller-server

@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pi-controller-processor
+  name: pi-controller-server
   namespace: pi-controller
   labels:
-    app: pi-controller-processor
+    app: pi-controller-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pi-controller-processor
+      app: pi-controller-server
   template:
     metadata:
       labels:
-        app: pi-controller-processor
+        app: pi-controller-server
     spec:
       containers:
-      - name: pi-controller-processor
-        image: pi-controller-processor:latest
+      - name: pi-controller-server
+        image: pi-controller-server:latest
         ports:
-        - containerPort: 50052
+        - containerPort: 5005
         resources:
           limits:
             memory: "256Mi"
@@ -30,17 +30,18 @@ spec:
         env:
         - name: STAGE
           value: "prod"
+        command: ["./pi-controller-server", "--stage=prod"]
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: pi-controller-processor-service
+  name: pi-controller-server-service
   namespace: pi-controller
 spec:
   type: LoadBalancer
   selector:
-    app: pi-controller-processor
+    app: pi-controller-server
   ports:
   - protocol: TCP
-    port: 50052
-    targetPort: 50052
+    port: 5005
+    targetPort: 5005
