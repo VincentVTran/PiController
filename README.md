@@ -117,3 +117,5 @@ kubectl apply -f deployment.yaml
 ```
 
 Configure the Pi's DNS/IP in `config/application-config.json` under the `prod` key before building the image.
+
+### Testing
