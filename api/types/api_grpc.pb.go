@@ -36,6 +36,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	PiAgentController_ConfigureCamera_FullMethodName      = "/homeserver.proto.PiAgentController/configureCamera"
 	PiAgentController_RetrieveCameraStatus_FullMethodName = "/homeserver.proto.PiAgentController/retrieveCameraStatus"
+	PiAgentController_StreamFrames_FullMethodName         = "/homeserver.proto.PiAgentController/StreamFrames"
 )
 
 // PiAgentControllerClient is the client API for PiAgentController service.
@@ -47,6 +48,7 @@ const (
 type PiAgentControllerClient interface {
 	ConfigureCamera(ctx context.Context, in *CameraRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	RetrieveCameraStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*OperationResponse, error)
+	StreamFrames(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FrameChunk], error)
 }
 
 type piAgentControllerClient struct {
@@ -77,6 +79,25 @@ func (c *piAgentControllerClient) RetrieveCameraStatus(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *piAgentControllerClient) StreamFrames(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FrameChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &PiAgentController_ServiceDesc.Streams[0], PiAgentController_StreamFrames_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamRequest, FrameChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type PiAgentController_StreamFramesClient = grpc.ServerStreamingClient[FrameChunk]
+
 // PiAgentControllerServer is the server API for PiAgentController service.
 // All implementations must embed UnimplementedPiAgentControllerServer
 // for forward compatibility.
@@ -86,6 +107,7 @@ func (c *piAgentControllerClient) RetrieveCameraStatus(ctx context.Context, in *
 type PiAgentControllerServer interface {
 	ConfigureCamera(context.Context, *CameraRequest) (*OperationResponse, error)
 	RetrieveCameraStatus(context.Context, *emptypb.Empty) (*OperationResponse, error)
+	StreamFrames(*StreamRequest, grpc.ServerStreamingServer[FrameChunk]) error
 	mustEmbedUnimplementedPiAgentControllerServer()
 }
 
@@ -101,6 +123,9 @@ func (UnimplementedPiAgentControllerServer) ConfigureCamera(context.Context, *Ca
 }
 func (UnimplementedPiAgentControllerServer) RetrieveCameraStatus(context.Context, *emptypb.Empty) (*OperationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RetrieveCameraStatus not implemented")
+}
+func (UnimplementedPiAgentControllerServer) StreamFrames(*StreamRequest, grpc.ServerStreamingServer[FrameChunk]) error {
+	return status.Errorf(codes.Unimplemented, "method StreamFrames not implemented")
 }
 func (UnimplementedPiAgentControllerServer) mustEmbedUnimplementedPiAgentControllerServer() {}
 func (UnimplementedPiAgentControllerServer) testEmbeddedByValue()                           {}
@@ -159,6 +184,17 @@ func _PiAgentController_RetrieveCameraStatus_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PiAgentController_StreamFrames_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(PiAgentControllerServer).StreamFrames(m, &grpc.GenericServerStream[StreamRequest, FrameChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type PiAgentController_StreamFramesServer = grpc.ServerStreamingServer[FrameChunk]
+
 // PiAgentController_ServiceDesc is the grpc.ServiceDesc for PiAgentController service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -175,6 +211,12 @@ var PiAgentController_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PiAgentController_RetrieveCameraStatus_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamFrames",
+			Handler:       _PiAgentController_StreamFrames_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "api/types/api.proto",
 }

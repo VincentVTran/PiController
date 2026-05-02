@@ -25,6 +25,7 @@ import "google/protobuf/empty.proto";
 service PiAgentController {
   rpc configureCamera(CameraRequest) returns (OperationResponse) {}
   rpc retrieveCameraStatus(google.protobuf.Empty) returns (OperationResponse) {}
+  rpc StreamFrames(StreamRequest) returns (stream FrameChunk) {}
 }
 
 /**
@@ -43,5 +44,14 @@ message OperationResponse {
   string api_version = 1;
   int32 status_code = 2;
   string output = 3;
+}
+
+message StreamRequest {
+  int32 framerate = 1;
+}
+
+message FrameChunk {
+  bytes data = 1;
+  int64 timestamp_ms = 2;
 }
 

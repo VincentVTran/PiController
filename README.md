@@ -37,23 +37,18 @@ The first supported operation is enabling and disabling the camera (via the `ras
 | `configureCamera` | `CameraRequest` | Enable or disable the camera |
 | `retrieveCameraStatus` | `Empty` | Get the current camera status (`active` / `inactive`) |
 
-### WebSocket API (`pi-controller-server`)
+### REST API (`pi-controller-server`)
 
-Connect to `ws://<server>:5005/ws` and send JSON messages.
-
-**Enable camera:**
-```json
-{"operation": "configure_camera", "client_id": "my-client", "enable": true}
+**Configure camera** — `POST /camera`
+```bash
+curl -X POST http://<server>:5005/camera \
+  -H "Content-Type: application/json" \
+  -d '{"client_id": "my-client", "enable": true}'
 ```
 
-**Disable camera:**
-```json
-{"operation": "configure_camera", "client_id": "my-client", "enable": false}
-```
-
-**Get status:**
-```json
-{"operation": "retrieve_camera_status"}
+**Get camera status** — `GET /camera/status`
+```bash
+curl http://<server>:5005/camera/status
 ```
 
 **Response:**
@@ -89,9 +84,21 @@ make test-local
 
 ### Running locally (with containers)
 
+Use Docker Compose to run both services as containers on your local machine — no Kubernetes required. Good for testing container builds quickly.
+
 ```bash
 make run-all
 ```
+
+### Testing against a Kubernetes cluster
+
+Use Tilt to build the server image, push it to Docker Hub, and deploy it via `deployment.yaml` to your k8s cluster. Tilt watches for file changes and automatically rebuilds and redeploys.
+
+```bash
+tilt up
+```
+
+Requires a Docker Hub login (`docker login`) and a reachable k8s cluster (`kubectl config current-context`).
 
 ---
 

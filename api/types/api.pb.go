@@ -194,6 +194,102 @@ func (x *OperationResponse) GetOutput() string {
 	return ""
 }
 
+type StreamRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Framerate     int32                  `protobuf:"varint,1,opt,name=framerate,proto3" json:"framerate,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamRequest) Reset() {
+	*x = StreamRequest{}
+	mi := &file_api_types_api_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamRequest) ProtoMessage() {}
+
+func (x *StreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_types_api_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
+func (*StreamRequest) Descriptor() ([]byte, []int) {
+	return file_api_types_api_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *StreamRequest) GetFramerate() int32 {
+	if x != nil {
+		return x.Framerate
+	}
+	return 0
+}
+
+type FrameChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	TimestampMs   int64                  `protobuf:"varint,2,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FrameChunk) Reset() {
+	*x = FrameChunk{}
+	mi := &file_api_types_api_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FrameChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FrameChunk) ProtoMessage() {}
+
+func (x *FrameChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_api_types_api_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FrameChunk.ProtoReflect.Descriptor instead.
+func (*FrameChunk) Descriptor() ([]byte, []int) {
+	return file_api_types_api_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *FrameChunk) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *FrameChunk) GetTimestampMs() int64 {
+	if x != nil {
+		return x.TimestampMs
+	}
+	return 0
+}
+
 var File_api_types_api_proto protoreflect.FileDescriptor
 
 const file_api_types_api_proto_rawDesc = "" +
@@ -211,10 +307,17 @@ const file_api_types_api_proto_rawDesc = "" +
 	"apiVersion\x12\x1f\n" +
 	"\vstatus_code\x18\x02 \x01(\x05R\n" +
 	"statusCode\x12\x16\n" +
-	"\x06output\x18\x03 \x01(\tR\x06output2\xc5\x01\n" +
+	"\x06output\x18\x03 \x01(\tR\x06output\"-\n" +
+	"\rStreamRequest\x12\x1c\n" +
+	"\tframerate\x18\x01 \x01(\x05R\tframerate\"C\n" +
+	"\n" +
+	"FrameChunk\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12!\n" +
+	"\ftimestamp_ms\x18\x02 \x01(\x03R\vtimestampMs2\x98\x02\n" +
 	"\x11PiAgentController\x12Y\n" +
 	"\x0fconfigureCamera\x12\x1f.homeserver.proto.CameraRequest\x1a#.homeserver.proto.OperationResponse\"\x00\x12U\n" +
-	"\x14retrieveCameraStatus\x12\x16.google.protobuf.Empty\x1a#.homeserver.proto.OperationResponse\"\x00B-Z+github.com/vincentvtran/pi-controller/protob\x06proto3"
+	"\x14retrieveCameraStatus\x12\x16.google.protobuf.Empty\x1a#.homeserver.proto.OperationResponse\"\x00\x12Q\n" +
+	"\fStreamFrames\x12\x1f.homeserver.proto.StreamRequest\x1a\x1c.homeserver.proto.FrameChunk\"\x000\x01B-Z+github.com/vincentvtran/pi-controller/protob\x06proto3"
 
 var (
 	file_api_types_api_proto_rawDescOnce sync.Once
@@ -228,21 +331,25 @@ func file_api_types_api_proto_rawDescGZIP() []byte {
 	return file_api_types_api_proto_rawDescData
 }
 
-var file_api_types_api_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_api_types_api_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_api_types_api_proto_goTypes = []any{
 	(*CameraRequest)(nil),     // 0: homeserver.proto.CameraRequest
 	(*CameraParameter)(nil),   // 1: homeserver.proto.CameraParameter
 	(*OperationResponse)(nil), // 2: homeserver.proto.OperationResponse
-	(*emptypb.Empty)(nil),     // 3: google.protobuf.Empty
+	(*StreamRequest)(nil),     // 3: homeserver.proto.StreamRequest
+	(*FrameChunk)(nil),        // 4: homeserver.proto.FrameChunk
+	(*emptypb.Empty)(nil),     // 5: google.protobuf.Empty
 }
 var file_api_types_api_proto_depIdxs = []int32{
 	1, // 0: homeserver.proto.CameraRequest.parameters:type_name -> homeserver.proto.CameraParameter
 	0, // 1: homeserver.proto.PiAgentController.configureCamera:input_type -> homeserver.proto.CameraRequest
-	3, // 2: homeserver.proto.PiAgentController.retrieveCameraStatus:input_type -> google.protobuf.Empty
-	2, // 3: homeserver.proto.PiAgentController.configureCamera:output_type -> homeserver.proto.OperationResponse
-	2, // 4: homeserver.proto.PiAgentController.retrieveCameraStatus:output_type -> homeserver.proto.OperationResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
+	5, // 2: homeserver.proto.PiAgentController.retrieveCameraStatus:input_type -> google.protobuf.Empty
+	3, // 3: homeserver.proto.PiAgentController.StreamFrames:input_type -> homeserver.proto.StreamRequest
+	2, // 4: homeserver.proto.PiAgentController.configureCamera:output_type -> homeserver.proto.OperationResponse
+	2, // 5: homeserver.proto.PiAgentController.retrieveCameraStatus:output_type -> homeserver.proto.OperationResponse
+	4, // 6: homeserver.proto.PiAgentController.StreamFrames:output_type -> homeserver.proto.FrameChunk
+	4, // [4:7] is the sub-list for method output_type
+	1, // [1:4] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -259,7 +366,7 @@ func file_api_types_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_types_api_proto_rawDesc), len(file_api_types_api_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

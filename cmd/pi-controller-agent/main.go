@@ -3,14 +3,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net"
 	"os/exec"
 	"strings"
+	"time"
 
 	pb "github.com/vincentvtran/pi-controller/api/types"
 	"github.com/vincentvtran/pi-controller/pkg/logging"
@@ -56,6 +59,131 @@ func (s *server) RetrieveCameraStatus(ctx context.Context, _ *emptypb.Empty) (*p
 	}
 	status := strings.TrimSpace(string(out))
 	return &pb.OperationResponse{ApiVersion: s.version, StatusCode: 200, Output: status}, nil
+}
+
+func (s *server) StreamFrames(req *pb.StreamRequest, stream pb.PiAgentController_StreamFramesServer) error {
+	framerate := req.Framerate
+	if framerate <= 0 {
+		framerate = 5
+	}
+	logger.Info("StreamFrames started", "framerate", framerate)
+
+	ctx := stream.Context()
+
+	raspivid := exec.CommandContext(ctx,
+		"raspivid", "-o", "-", "-t", "0",
+		"-w", "640", "-h", "360", "-fps", "25", "--rotation", "270",
+	)
+	ffmpeg := exec.CommandContext(ctx,
+		"ffmpeg", "-loglevel", "quiet",
+		"-i", "pipe:0",
+		"-vf", fmt.Sprintf("fps=%d", framerate),
+		"-f", "image2pipe", "-vcodec", "mjpeg", "pipe:1",
+	)
+
+	pipe, err := raspivid.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("raspivid stdout pipe: %w", err)
+	}
+	ffmpeg.Stdin = pipe
+
+	ffmpegOut, err := ffmpeg.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("ffmpeg stdout pipe: %w", err)
+	}
+
+	if err := raspivid.Start(); err != nil {
+		return fmt.Errorf("start raspivid: %w", err)
+	}
+	if err := ffmpeg.Start(); err != nil {
+		raspivid.Process.Kill()
+		return fmt.Errorf("start ffmpeg: %w", err)
+	}
+	defer func() {
+		raspivid.Process.Kill()
+		ffmpeg.Process.Kill()
+	}()
+
+	return parseMJPEGStream(ffmpegOut, func(frame []byte) error {
+		return stream.Send(&pb.FrameChunk{
+			Data:        frame,
+			TimestampMs: time.Now().UnixMilli(),
+		})
+	}, ctx)
+}
+
+// parseMJPEGStream reads an MJPEG byte stream and calls send for each complete JPEG frame.
+//
+// Parameters:
+//   - r: the raw byte stream from ffmpeg's stdout (continuous bytes, no built-in framing)
+//   - send: a callback that receives one complete JPEG frame at a time — in our case,
+//     this is stream.Send() which forwards the frame over the gRPC connection to the server
+//   - ctx: the gRPC stream's context — when the server closes the stream or the connection
+//     drops, ctx.Done() fires and we stop reading
+//
+// How MJPEG works:
+// An MJPEG stream is just JPEG images concatenated one after another with no envelope.
+// The only way to find where one image ends and the next begins is by looking for the
+// JPEG End-Of-Image marker: two bytes 0xFF 0xD9.
+//
+// How the buffering works:
+// We can't assume each r.Read() call gives us exactly one frame — it might give us
+// half a frame, or two frames at once. So we accumulate bytes in `buf` and scan for
+// the EOI marker in a loop. Each time we find one, we extract everything up to and
+// including it as a complete frame and call send(). Whatever bytes remain after the
+// marker stay in `buf` for the next iteration.
+func parseMJPEGStream(r io.Reader, send func([]byte) error, ctx context.Context) error {
+	var buf bytes.Buffer
+	chunk := make([]byte, 65536)
+	eoi := []byte{0xFF, 0xD9}
+
+	for {
+		// Check if the gRPC stream has been cancelled (e.g. server disconnected).
+		// This runs before every read so we don't block on a dead stream.
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		// Read the next batch of raw bytes from ffmpeg.
+		// n is how many bytes were actually read this iteration.
+		n, err := r.Read(chunk)
+		if n > 0 {
+			buf.Write(chunk[:n]) // append new bytes to our accumulation buffer
+			data := buf.Bytes()
+
+			// Extract all complete frames that fit in the buffer so far.
+			for {
+				idx := bytes.Index(data, eoi)
+				if idx < 0 {
+					break // no complete frame yet, wait for more bytes
+				}
+
+				// idx+2 because the EOI marker itself is 2 bytes (0xFF, 0xD9)
+				frame := make([]byte, idx+2)
+				copy(frame, data[:idx+2])
+
+				// send() calls stream.Send() — this is what transmits the frame
+				// over gRPC to the pi-controller-server.
+				if sendErr := send(frame); sendErr != nil {
+					return sendErr
+				}
+
+				// Discard the frame we just sent and keep the remainder.
+				data = data[idx+2:]
+				buf.Reset()
+				buf.Write(data)
+				data = buf.Bytes()
+			}
+		}
+		if err == io.EOF {
+			return nil // ffmpeg exited cleanly
+		}
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func enableCamera() error {
